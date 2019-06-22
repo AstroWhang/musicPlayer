@@ -1,0 +1,146 @@
+// es6 destructuring
+import { songsList } from '../data/songs.js'
+// not destructuring, getting the whole module
+import PlayInfo from '../modules/play-info.js'
+import TrackBar from './track-bar.js';
+
+const Playlist = ( () => {
+
+  // data or state
+  let songs = songsList;
+  let currentlyPlayingIndex = 0;
+  // Audio() is webapi that is built into the browser
+  let currentSong = new Audio(songs[currentlyPlayingIndex].url);
+  let isPlaying = false;
+  
+  // cache the DOM
+  const playlistEl = document.querySelector('.playlist');
+
+  const init = () => {
+    render();
+    listeners();
+    PlayInfo.setState({
+      songsLength: songs.length,
+      isPlaying: !currentSong.paused
+    })
+  }
+
+  const flip = () => {
+    togglePlayPause();
+    render();
+  }
+
+  const changeAudioSrc = () => {
+    currentSong.src = songs[currentlyPlayingIndex].url;
+  }
+
+  const togglePlayPause = () => {
+    return currentSong.paused ? currentSong.play() : currentSong.pause();
+  }
+
+  const mainPlayLogic = clickedIndex => {
+    if (currentlyPlayingIndex === clickedIndex) {
+      /// toggle play or pause
+      console.log('same song clicked')
+      togglePlayPause();
+    } else {
+      console.log('new')
+      currentlyPlayingIndex = clickedIndex;
+      changeAudioSrc();
+      togglePlayPause();
+    }
+
+    PlayInfo.setState({
+      songsLength: songs.length,
+      isPlaying: !currentSong.paused
+    })
+  }
+
+  const playNext = () => {
+    if (songs[currentlyPlayingIndex + 1]) {
+      currentlyPlayingIndex++;
+      changeAudioSrc();
+      togglePlayPause();
+      render();
+    }
+  }
+
+  const listeners = _ => {
+    // 1. need to get the index of the li tag from songlist
+
+    // 2. change the current playing index to the index of the li tag
+
+    // 3. play or pause
+
+    // 4. not the same song then change the src to that new song after changing the current index
+    playlistEl.addEventListener('click', event => {
+      if (event.target && event.target.matches('.fa')) {
+        const listElem = event.target.parentNode.parentNode;
+        const listElemIndex = [...listElem.parentElement.children].indexOf(listElem);
+        mainPlayLogic(listElemIndex);
+        render();
+      }
+    })
+
+    currentSong.addEventListener('timeupdate', () => {
+      TrackBar.setState(currentSong);
+      console.log(currentSong.currentTime);
+    })
+
+    // audio api has an ended event listener which checks if song playing has ended
+    currentSong.addEventListener('ended', () => {
+      // play next function
+      playNext();
+    })
+  }
+
+  const render = () => {
+    let markup = '';
+
+    const toggleIcon = (itemIndex) => {
+      if (currentlyPlayingIndex === itemIndex) {
+        return currentSong.paused ? 'fa-play' : 'fa-pause'
+      } else {
+        return 'fa-play';
+      }
+    }
+
+    songs.forEach((songObj, index) => {
+      markup += `
+        <li class="playlist__song ${index === currentlyPlayingIndex ? 'playlist__song--active' : ''} ">
+              <div class="play-pause">
+                <i class="fa ${toggleIcon(index)} pp-icon"></i>
+              </div>
+              <div class="playerlist__song-details">
+                <span class="playlist__song-name">${songObj.title}</span>
+                <br>
+                <span class="playlist__song-artist">${songObj.artist}</span>
+              </div>
+              <div class="playlist__song-duration">
+                ${songObj.time}
+              </div>
+            </li>
+      `;
+    })
+
+    playlistEl.innerHTML = markup;
+  }
+
+  return {
+    init,
+    flip
+  }
+
+})();
+ 
+export default Playlist;
+
+
+
+
+
+
+
+
+
+
